@@ -127,3 +127,8 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+
+legal_data/
+stanford-corenlp-4.1.0/
+stanford-corenlp-latest.zip
