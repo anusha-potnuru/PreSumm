@@ -52,6 +52,27 @@ def load_json(p, lower):
     tgt = [clean(' '.join(sent)).split() for sent in tgt]
     return source, tgt
 
+def load_json1(p, lower):
+    source = []
+    tgt = []
+    flag = False
+    for sent in json.load(open(p))['sentences']:
+        tokens = [t['word'] for t in sent['tokens']]
+        if (lower):
+            tokens = [t.lower() for t in tokens]
+        if (tokens[0] == '@highlight'):
+            flag = True
+            tgt.append([])
+            continue
+        if (flag):
+            tgt[-1].extend(tokens)
+        else:
+            source.append(tokens)
+
+    source = [clean(' '.join(sent)).split() for sent in source]
+    tgt = [clean(' '.join(sent)).split() for sent in tgt]
+    return source, tgt
+
 
 
 def load_xml(p):
@@ -330,11 +351,20 @@ def _format_to_bert(params):
 
 def format_to_lines(args):
     corpus_mapping = {}
-    for corpus_type in ['valid', 'test', 'train']:
-        temp = []
-        for line in open(pjoin(args.map_path, 'mapping_' + corpus_type + '.txt')):
-            temp.append(hashhex(line.strip()))
-        corpus_mapping[corpus_type] = {key.strip(): 1 for key in temp}
+
+    # create train, valid, test split for legal_doc
+    if args.dataset_name=='legal_doc':
+        files = glob.glob(pjoin(args.raw_path, '*.json'))
+        print(len(files))
+        # train_files, valid_files, test_files 
+    exit()
+            
+    # for corpus_type in ['valid', 'test', 'train']:
+    #     temp = []
+    #     for line in open(pjoin(args.map_path, 'mapping_' + corpus_type + '.txt')):
+    #         temp.append(hashhex(line.strip()))
+    #     corpus_mapping[corpus_type] = {key.strip(): 1 for key in temp}
+
     train_files, valid_files, test_files = [], [], []
     for f in glob.glob(pjoin(args.raw_path, '*.json')):
         real_name = f.split('/')[-1].split('.')[0]
@@ -346,6 +376,7 @@ def format_to_lines(args):
             train_files.append(f)
         # else:
         #     train_files.append(f)
+
 
     corpora = {'train': train_files, 'valid': valid_files, 'test': test_files}
     for corpus_type in ['train', 'valid', 'test']:
