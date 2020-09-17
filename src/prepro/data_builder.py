@@ -24,6 +24,7 @@ import xml.etree.ElementTree as ET
 
 nyt_remove_words = ["photo", "graph", "chart", "map", "table", "drawing"]
 
+random.seed(123)
 
 def recover_from_corenlp(s):
     s = re.sub(r' \'{\w}', '\'\g<1>', s)
@@ -52,27 +53,24 @@ def load_json(p, lower):
     tgt = [clean(' '.join(sent)).split() for sent in tgt]
     return source, tgt
 
-def load_json1(p, lower):
+def load_json1(p, lower): # for lega doc processing
     source = []
     tgt = []
-    flag = False
-    for sent in json.load(open(p))['sentences']:
-        tokens = [t['word'] for t in sent['tokens']]
-        if (lower):
-            tokens = [t.lower() for t in tokens]
-        if (tokens[0] == '@highlight'):
-            flag = True
-            tgt.append([])
-            continue
-        if (flag):
-            tgt[-1].extend(tokens)
-        else:
-            source.append(tokens)
+    sents = json.load(open(p))['sentences']
+
+    for s in iter(sents):
+        label = next(s)
+        l_tokens = [t['word'] for t in label['tokens']]
+        s_tokens = [t['word'] for t in s['tokens']]
+        if (l_tokens[0]=='&' & l_tokens[1]=='&' & l_tokens[2]=='&'):
+            if l_tokens[3]=='0':
+                src.append(s_tokens)
+            elif l_tokens[3]=='1':
+                tgt.append(s_tokens)    
 
     source = [clean(' '.join(sent)).split() for sent in source]
     tgt = [clean(' '.join(sent)).split() for sent in tgt]
     return source, tgt
-
 
 
 def load_xml(p):
@@ -356,26 +354,31 @@ def format_to_lines(args):
     if args.dataset_name=='legal_doc':
         files = glob.glob(pjoin(args.raw_path, '*.json'))
         print(len(files))
+        random.shuffle(files)
+        x = 0.8*(len(files)), y= 0.9*(len(files))
+        train_files = files[:x]
+        valid_files = files[x:y]
+        test_files = files[y:]
+        print(len(train_files), len(valid_files), len(test_files))
         # train_files, valid_files, test_files 
-    exit()
-            
-    # for corpus_type in ['valid', 'test', 'train']:
-    #     temp = []
-    #     for line in open(pjoin(args.map_path, 'mapping_' + corpus_type + '.txt')):
-    #         temp.append(hashhex(line.strip()))
-    #     corpus_mapping[corpus_type] = {key.strip(): 1 for key in temp}
+    else:   
+        for corpus_type in ['valid', 'test', 'train']:
+            temp = []
+            for line in open(pjoin(args.map_path, 'mapping_' + corpus_type + '.txt')):
+                temp.append(hashhex(line.strip()))
+            corpus_mapping[corpus_type] = {key.strip(): 1 for key in temp}
 
-    train_files, valid_files, test_files = [], [], []
-    for f in glob.glob(pjoin(args.raw_path, '*.json')):
-        real_name = f.split('/')[-1].split('.')[0]
-        if (real_name in corpus_mapping['valid']):
-            valid_files.append(f)
-        elif (real_name in corpus_mapping['test']):
-            test_files.append(f)
-        elif (real_name in corpus_mapping['train']):
-            train_files.append(f)
-        # else:
-        #     train_files.append(f)
+        train_files, valid_files, test_files = [], [], []
+        for f in glob.glob(pjoin(args.raw_path, '*.json')):
+            real_name = f.split('/')[-1].split('.')[0]
+            if (real_name in corpus_mapping['valid']):
+                valid_files.append(f)
+            elif (real_name in corpus_mapping['test']):
+                test_files.append(f)
+            elif (real_name in corpus_mapping['train']):
+                train_files.append(f)
+            # else:
+            #     train_files.append(f)
 
 
     corpora = {'train': train_files, 'valid': valid_files, 'test': test_files}
@@ -408,7 +411,7 @@ def format_to_lines(args):
 def _format_to_lines(params):
     f, args = params
     print(f)
-    source, tgt = load_json(f, args.lower)
+    source, tgt = load_json1(f, args.lower)
     return {'src': source, 'tgt': tgt}
 
 
