@@ -57,8 +57,7 @@ def load_json1(p, lower): # for lega doc processing
     source = []
     tgt = []
     sents = json.load(open(p))['sentences']
-    print(type(sents))
-
+    
     it = iter(sents)
     for s in it:
         label = next(it)
