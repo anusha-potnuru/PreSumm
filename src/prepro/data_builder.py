@@ -355,7 +355,8 @@ def format_to_lines(args):
         files = glob.glob(pjoin(args.raw_path, '*.json'))
         print(len(files))
         random.shuffle(files)
-        x = 0.8*(len(files)), y= 0.9*(len(files))
+        x = int(0.8*(len(files)))
+        y = int(0.9*(len(files)))
         train_files = files[:x]
         valid_files = files[x:y]
         test_files = files[y:]
