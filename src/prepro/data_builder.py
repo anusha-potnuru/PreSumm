@@ -57,20 +57,24 @@ def load_json1(p, lower): # for lega doc processing
     source = []
     tgt = []
     sents = json.load(open(p))['sentences']
+    print(type(sents))
 
-    for s in iter(sents):
-        label = next(s)
+    it = iter(sents)
+    for s in it:
+        label = next(it)
         l_tokens = [t['word'] for t in label['tokens']]
         s_tokens = [t['word'] for t in s['tokens']]
-        if (l_tokens[0]=='&' & l_tokens[1]=='&' & l_tokens[2]=='&'):
+        # print(l_tokens)
+        if (l_tokens[0]=='$' and l_tokens[1]=='$' and l_tokens[2]=='$'):
             if l_tokens[3]=='0':
-                src.append(s_tokens)
+                source.append(s_tokens)
             elif l_tokens[3]=='1':
                 tgt.append(s_tokens)    
 
     source = [clean(' '.join(sent)).split() for sent in source]
     tgt = [clean(' '.join(sent)).split() for sent in tgt]
     return source, tgt
+
 
 
 def load_xml(p):
