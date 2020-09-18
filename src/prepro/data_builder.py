@@ -415,7 +415,10 @@ def format_to_lines(args):
 def _format_to_lines(params):
     f, args = params
     print(f)
-    source, tgt = load_json1(f, args.lower)
+    if args.dataset_name=='legal_doc':
+        source, tgt = load_json1(f, args.lower)
+    else
+        source, tgt = load_json(f, args.lower)
     return {'src': source, 'tgt': tgt}
 
 
