@@ -53,9 +53,9 @@ if __name__ == '__main__':
     parser.add_argument("-shard_size", default=2000, type=int)
     parser.add_argument('-min_src_nsents', default=3, type=int)
     parser.add_argument('-max_src_nsents', default=100, type=int)
-    parser.add_argument('-min_src_ntokens_per_sent', default=5, type=int)
+    parser.add_argument('-min_src_ntokens_per_sent', default=2, type=int)
     parser.add_argument('-max_src_ntokens_per_sent', default=200, type=int)
-    parser.add_argument('-min_tgt_ntokens', default=5, type=int)
+    parser.add_argument('-min_tgt_ntokens', default=2, type=int)
     parser.add_argument('-max_tgt_ntokens', default=500, type=int)
 
     parser.add_argument("-lower", type=str2bool, nargs='?',const=True,default=True)

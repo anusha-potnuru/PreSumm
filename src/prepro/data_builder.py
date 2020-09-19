@@ -57,21 +57,25 @@ def load_json1(p, lower): # for lega doc processing
     source = []
     tgt = []
     sents = json.load(open(p))['sentences']
+    # print('no of sents: ', len(sents))
+
+    # write code such that sents are broken at $$$, and if 0 added to src, if 1 added to tgt
+    tokens = []
     
-    it = iter(sents)
-    for s in it:
-        label = next(it)
-        l_tokens = [t['word'] for t in label['tokens']]
+    for s in sents:
         s_tokens = [t['word'] for t in s['tokens']]
-        # print(l_tokens)
-        if (l_tokens[0]=='$' and l_tokens[1]=='$' and l_tokens[2]=='$'):
-            if l_tokens[3]=='0':
-                source.append(s_tokens)
-            elif l_tokens[3]=='1':
-                tgt.append(s_tokens)    
+        if (s_tokens[0]=='$' and s_tokens[1]=='$' and s_tokens[2]=='$'):
+            if s_tokens[3]=='0':
+                source.append(tokens)
+            elif s_tokens[3]=='1':
+                tgt.append(tokens)
+            tokens = []
+        else:
+            tokens.extend(s_tokens)  
 
     source = [clean(' '.join(sent)).split() for sent in source]
     tgt = [clean(' '.join(sent)).split() for sent in tgt]
+    # print('returning')
     return source, tgt
 
 
@@ -363,6 +367,8 @@ def format_to_lines(args):
         train_files = files[:x]
         valid_files = files[x:y]
         test_files = files[y:]
+
+
         print(len(train_files), len(valid_files), len(test_files))
         # train_files, valid_files, test_files 
     else:   
@@ -383,20 +389,28 @@ def format_to_lines(args):
                 train_files.append(f)
             # else:
             #     train_files.append(f)
+        print(len(train_files), len(valid_files), len(test_files))
+
 
 
     corpora = {'train': train_files, 'valid': valid_files, 'test': test_files}
     for corpus_type in ['train', 'valid', 'test']:
         a_lst = [(f, args) for f in corpora[corpus_type]]
+        print(corpus_type, len(a_lst))
         pool = Pool(args.n_cpus)
         dataset = []
         p_ct = 0
         for d in pool.imap_unordered(_format_to_lines, a_lst):
+            if d==None:
+                print('ERROR None')
+            # print(d)
             dataset.append(d)
+            # print("===>", len(dataset))
             if (len(dataset) > args.shard_size):
                 pt_file = "{:s}.{:s}.{:d}.json".format(args.save_path, corpus_type, p_ct)
                 with open(pt_file, 'w') as save:
                     # save.write('\n'.join(dataset))
+                    print('saving dataset of len', len(dataset), 'in ', pt_file)
                     save.write(json.dumps(dataset))
                     p_ct += 1
                     dataset = []
@@ -407,6 +421,7 @@ def format_to_lines(args):
             pt_file = "{:s}.{:s}.{:d}.json".format(args.save_path, corpus_type, p_ct)
             with open(pt_file, 'w') as save:
                 # save.write('\n'.join(dataset))
+                print('saving dataset of len', len(dataset), 'in ', pt_file)
                 save.write(json.dumps(dataset))
                 p_ct += 1
                 dataset = []
@@ -414,13 +429,14 @@ def format_to_lines(args):
 
 def _format_to_lines(params):
     f, args = params
-    print(f)
+    # print(f)
     if args.dataset_name=='legal_doc':
         source, tgt = load_json1(f, args.lower)
     else:
         source, tgt = load_json(f, args.lower)
+    
+    # print(source, tgt)
     return {'src': source, 'tgt': tgt}
-
 
 
 
