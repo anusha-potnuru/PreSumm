@@ -165,6 +165,7 @@ class Trainer(object):
                         step += 1
                         if step > train_steps:
                             break
+            print('Finished one epoch and step: ', step)        
             train_iter = train_iter_fct()
 
         return total_stats
