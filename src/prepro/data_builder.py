@@ -360,10 +360,10 @@ def format_to_lines(args):
         print(len(files))
         random.shuffle(files)
         x = int(0.8*(len(files)))
-        y = int(0.9*(len(files)))
+        # y = int(0.9*(len(files)))
         train_files = files[:x]
-        valid_files = files[x:y]
-        test_files = files[y:]
+        valid_files = files[x:]
+        test_files = []
 
 
         print(len(train_files), len(valid_files), len(test_files))
