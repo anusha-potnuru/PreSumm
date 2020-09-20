@@ -56,7 +56,7 @@ def load_json(p, lower):
 def load_json1(p, lower): # for lega doc processing
     source = []
     tgt = []
-    sents = json.load(open(p))['sentences']
+    sents = json.load(open(p , encoding="utf-8" ))['sentences']
     # print('no of sents: ', len(sents))
 
     # write code such that sents are broken at $$$, and if 0 added to src, if 1 added to tgt
@@ -305,6 +305,7 @@ def format_to_bert(args):
         datasets = ['train', 'valid', 'test']
     for corpus_type in datasets:
         a_lst = []
+        print(glob.glob(pjoin(args.raw_path, '*' + corpus_type + '.*.json')))
         for json_f in glob.glob(pjoin(args.raw_path, '*' + corpus_type + '.*.json')):
             real_name = json_f.split('/')[-1]
             a_lst.append((corpus_type, json_f, args, pjoin(args.save_path, real_name.replace('json', 'bert.pt'))))
