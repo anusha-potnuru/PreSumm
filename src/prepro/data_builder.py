@@ -365,10 +365,15 @@ def format_to_lines(args):
         train_files = files[:x]
         valid_files = files[x:]
         test_files = []
-
-
         print(len(train_files), len(valid_files), len(test_files))
-        # train_files, valid_files, test_files 
+    elif args.dataset_name=='legal_doc_test':
+        files = glob.glob(pjoin(args.raw_path, '*.json'))
+        print(len(files))
+        random.shuffle(files)
+        train_files = []
+        valid_files = []
+        test_files = files
+        print(len(train_files), len(valid_files), len(test_files))
     else:   
         for corpus_type in ['valid', 'test', 'train']:
             temp = []
@@ -388,7 +393,6 @@ def format_to_lines(args):
             # else:
             #     train_files.append(f)
         print(len(train_files), len(valid_files), len(test_files))
-
 
 
     corpora = {'train': train_files, 'valid': valid_files, 'test': test_files}
