@@ -369,7 +369,6 @@ def format_to_lines(args):
     elif args.dataset_name=='legal_doc_test':
         files = glob.glob(pjoin(args.raw_path, '*.json'))
         print(len(files))
-        random.shuffle(files)
         train_files = []
         valid_files = []
         test_files = files
