@@ -135,6 +135,8 @@ class Trainer(object):
 
             reduce_counter = 0
             for i, batch in enumerate(train_iter):
+                # if i==0:
+                #     print(batch.src.shape())
                 if self.n_gpu == 0 or (i % self.n_gpu == self.gpu_rank):
 
                     true_batchs.append(batch)
@@ -165,7 +167,7 @@ class Trainer(object):
                         step += 1
                         if step > train_steps:
                             break
-            print('Finished one epoch and step: ', step)        
+            print('Finished epoch on step: ', step)        
             train_iter = train_iter_fct()
 
         return total_stats

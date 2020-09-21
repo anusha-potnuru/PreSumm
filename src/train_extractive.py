@@ -120,7 +120,7 @@ def validate_ext(args, device_id):
         logger.info('PPL %s' % str(xent_lst))
         for xent, cp in xent_lst:
             step = int(cp.split('.')[-2].split('_')[-1])
-            test_ext(args, device_id, cp, step)
+            # test_ext(args, device_id, cp, step)
     else:
         while (True):
             cp_files = sorted(glob.glob(os.path.join(args.model_path, 'model_step_*.pt')))
@@ -135,7 +135,7 @@ def validate_ext(args, device_id):
                     timestep = time_of_cp
                     step = int(cp.split('.')[-2].split('_')[-1])
                     validate(args, device_id, cp, step)
-                    test_ext(args, device_id, cp, step)
+                    # test_ext(args, device_id, cp, step)
 
             cp_files = sorted(glob.glob(os.path.join(args.model_path, 'model_step_*.pt')))
             cp_files.sort(key=os.path.getmtime)
@@ -197,6 +197,7 @@ def test_ext(args, device_id, pt, step):
     trainer.test(test_iter, step)
 
 def train_ext(args, device_id):
+    
     if (args.world_size > 1):
         train_multi_ext(args)
     else:
