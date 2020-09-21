@@ -370,6 +370,7 @@ def format_to_lines(args):
         files = glob.glob(pjoin(args.raw_path, '*.json'))
         files.sort()
         print(len(files))
+        print(files)
         train_files = []
         valid_files = []
         test_files = files
