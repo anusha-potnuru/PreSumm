@@ -202,14 +202,20 @@ class DataIterator(object):
         tgt_txt = ex['tgt_txt']
 
         end_id = [src[-1]]
+        # print('orig src sent len: ', len(src_sent_labels))
         src = src[:-1][:self.args.max_pos - 1] + end_id
         segs = segs[:self.args.max_pos]
         max_sent_id = bisect.bisect_left(clss, self.args.max_pos)
         src_sent_labels = src_sent_labels[:max_sent_id]
         clss = clss[:max_sent_id]
         # src_txt = src_txt[:max_sent_id]
+	
 
-
+        # print(src, tgt, segs, clss, src_sent_labels)
+        #print(clss)
+        #print(max_sent_id)
+        # print( src_txt, tgt_txt)
+        #exit()
 
         if(is_test):
             return src, tgt, segs, clss, src_sent_labels, src_txt, tgt_txt

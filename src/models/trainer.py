@@ -303,7 +303,6 @@ class Trainer(object):
 
                                 if ((not cal_oracle) and (not self.args.recall_eval)): #  and len(_pred) == 3 # remove the restriction for no of sentences to 3.
                                     break
-
                             _pred = '<q>'.join(_pred)
                             if(self.args.recall_eval):
                                 _pred = ' '.join(_pred.split()[:len(batch.tgt_str[i].split())])
