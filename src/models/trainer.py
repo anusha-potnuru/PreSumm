@@ -301,7 +301,7 @@ class Trainer(object):
                                 candidate = batch.src_str[i][j].strip()
                                 _pred.append(candidate)
 
-                                if ((not cal_oracle) and (not self.args.recall_eval) and len(_pred) == 3):
+                                if ((not cal_oracle) and (not self.args.recall_eval)): #  and len(_pred) == 3 # remove the restriction for no of sentences to 3.
                                     break
 
                             _pred = '<q>'.join(_pred)
