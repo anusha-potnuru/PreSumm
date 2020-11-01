@@ -281,6 +281,9 @@ class Trainer(object):
             self.model.eval()
         stats = Statistics()
 
+        logger.info("========> FUCKING TEST METHOD")
+        print("========> FUCKING TEST METHOD")
+
         can_path = '%s_step%d.candidate'%(self.args.result_path,step)
         gold_path = '%s_step%d.gold' % (self.args.result_path, step)
         with open(can_path, 'w') as save_pred:
@@ -301,8 +304,9 @@ class Trainer(object):
                                 candidate = batch.src_str[i][j].strip()
                                 _pred.append(candidate)
 
-                                if ((not cal_oracle) and (not self.args.recall_eval)): #  and len(_pred) == 3 # remove the restriction for no of sentences to 3.
+                                if ((not cal_oracle) and (not self.args.recall_eval) and len(_pred)==10): #  and len(_pred) == 3 # remove the restriction for no of sentences to 3.
                                     break
+                            logger.info("========> here")
                             _pred = '<q>'.join(_pred)
                             if(self.args.recall_eval):
                                 _pred = ' '.join(_pred.split()[:len(batch.tgt_str[i].split())])
@@ -314,10 +318,10 @@ class Trainer(object):
                             save_gold.write(gold[i].strip()+'\n')
                         for i in range(len(pred)):
                             save_pred.write(pred[i].strip()+'\n')
-        if(step!=-1 and self.args.report_rouge):
-            rouges = test_rouge(self.args.temp_dir, can_path, gold_path)
-            logger.info('Rouges at step %d \n%s' % (step, rouge_results_to_str(rouges)))
-        self._report_step(0, step, valid_stats=stats)
+        #if(step!=-1 and self.args.report_rouge):
+        #    rouges = test_rouge(self.args.temp_dir, can_path, gold_path)
+        #    logger.info('Rouges at step %d \n%s' % (step, rouge_results_to_str(rouges)))
+        #self._report_step(0, step, valid_stats=stats)
 
         return stats
 

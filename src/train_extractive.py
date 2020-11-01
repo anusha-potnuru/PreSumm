@@ -194,6 +194,8 @@ def test_ext(args, device_id, pt, step):
                                        args.test_batch_size, device,
                                        shuffle=False, is_test=True)
     trainer = build_trainer(args, device_id, model, None)
+    print("=====> testing")
+    logger.info("=====>testing")
     trainer.test(test_iter, step)
 
 def train_ext(args, device_id):
