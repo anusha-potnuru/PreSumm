@@ -190,31 +190,27 @@ class DataIterator(object):
 
 
 
-    def preprocess(self, ex, is_test):
+    def preprocess(self, ex, is_test): #one example
         src = ex['src']
         tgt = ex['tgt'][:self.args.max_tgt_len][:-1]+[2]
         src_sent_labels = ex['src_sent_labels']
         segs = ex['segs']
         if(not self.args.use_interval):
             segs=[0]*len(segs)
-        clss = ex['clss']
+        clss = ex['clss'] # list of cls indices
         src_txt = ex['src_txt']
         tgt_txt = ex['tgt_txt']
 
         end_id = [src[-1]]
-        # print('orig src sent len: ', len(src_sent_labels))
         src = src[:-1][:self.args.max_pos - 1] + end_id
         segs = segs[:self.args.max_pos]
-        max_sent_id = bisect.bisect_left(clss, self.args.max_pos)
+        max_sent_id = bisect.bisect_left(clss, self.args.max_pos) #returns len of clss less than args.max_pos
+
         src_sent_labels = src_sent_labels[:max_sent_id]
         clss = clss[:max_sent_id]
         # src_txt = src_txt[:max_sent_id]
-	
 
-        # print(src, tgt, segs, clss, src_sent_labels)
-        #print(clss)
-        #print(max_sent_id)
-        # print( src_txt, tgt_txt)
+        # these clss, src_sent_labels are of diff lengths for each example - how is it handled?
         #exit()
 
         if(is_test):

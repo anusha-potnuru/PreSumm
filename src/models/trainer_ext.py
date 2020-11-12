@@ -94,6 +94,8 @@ class Trainer(object):
         self.gpu_rank = gpu_rank
         self.report_manager = report_manager
 
+        self.threshold = 0.5 #added
+
         self.loss = torch.nn.BCELoss(reduction='none')
         assert grad_accum_count > 0
         # Set model in training mode.
@@ -134,6 +136,7 @@ class Trainer(object):
         while step <= train_steps:
 
             reduce_counter = 0
+            outcomes = np.array([0, 0, 0,0]) #tp, fp, fn, tn 
             for i, batch in enumerate(train_iter):
                 # if i==0:
                 #     print(batch.src.shape())
@@ -151,7 +154,7 @@ class Trainer(object):
 
                         self._gradient_accumulation(
                             true_batchs, normalization, total_stats,
-                            report_stats)
+                            report_stats, outcomes)
 
                         report_stats = self._maybe_report_training(
                             step, train_steps,
@@ -167,10 +170,34 @@ class Trainer(object):
                         step += 1
                         if step > train_steps:
                             break
-            print('Finished epoch on step: ', step)        
+
+            print('Finished epoch on step: ', step) 
+            # compute train accuracy
+            precision, recall, f1_score = self.compute_scores(outcomes)
+            logger.info("Train precision: {:0.2f}, recall: {:0.2f}, f1_score: {:0.2f}".format(precision, recall, f1_score))
             train_iter = train_iter_fct()
 
         return total_stats
+
+    def compute_outcomes(self, pred, labels, mask):
+        pred = pred.cpu().data.numpy()
+        labels = labels.cpu().data.numpy()
+        mask = mask.cpu().data.numpy()
+        tp = sum((pred*labels)*mask)
+        fp = sum((pred*np.logical_not(labels))*mask)
+        fn = sum((np.logical_not(pred)*labels)*mask)
+        tn = sum((np.logical_not(pred)*np.logical_not(labels))*mask)
+        return np.array([tp, fp, fn, tn])
+
+    def compute_scores(outcomes):#tp, fp, fn, tn 
+        tp = outcomes[0]
+        fp = outcomes[1]
+        fn = outcomes[2]
+        tn = outcomes[3]
+        precision = (tp/(tp+fp))*100
+        recall = (tp/(tp+fn))*100
+        f1_score = (2*precision*recall)/(precision+recall)
+        return precision, recall, f1_score
 
     def validate(self, valid_iter, step=0):
         """ Validate model.
@@ -183,6 +210,7 @@ class Trainer(object):
         stats = Statistics()
 
         with torch.no_grad():
+            outcomes = np.array([0, 0, 0,0]) #tp, fp, fn, tn 
             for batch in valid_iter:
                 src = batch.src
                 labels = batch.src_sent_labels
@@ -190,13 +218,25 @@ class Trainer(object):
                 clss = batch.clss
                 mask = batch.mask_src
                 mask_cls = batch.mask_cls
+                # print("src, segs, clss, mask, mask_cls")
+                # print(src.shape, labels.shape,  segs.shape, clss.shape, mask.shape, mask_cls.shape)
+                # torch.Size([3, 512]) torch.Size([3, 18]) torch.Size([3, 512]) torch.Size([3, 18]) torch.Size([3, 512]) torch.Size([3, 18])
 
                 sent_scores, mask = self.model(src, segs, clss, mask, mask_cls)
+                # print("sent_scores, mask")
+                # torch.Size([3, 18]) torch.Size([3, 18])
 
                 loss = self.loss(sent_scores, labels.float())
                 loss = (loss * mask.float()).sum()
                 batch_stats = Statistics(float(loss.cpu().data.numpy()), len(labels))
                 stats.update(batch_stats)
+
+                # print(sent_scores.shape, labels.shape) # try to get acc
+                pred = ( sent_scores*mask.float() >= self.threshold )
+                outcomes += self.compute_outcomes(pred, labels, mask)
+
+            precision, recall, f1_score = self.compute_scores(outcomes)
+            logger.info("Validation precision: {:0.2f}, recall: {:0.2f}, f1_score: {:0.2f}".format(precision, recall, f1_score))
             self._report_step(0, step, valid_stats=stats)
             return stats
 
@@ -230,6 +270,8 @@ class Trainer(object):
 
         can_path = '%s_step%d.candidate' % (self.args.result_path, step)
         gold_path = '%s_step%d.gold' % (self.args.result_path, step)
+
+        outcomes = np.array([0, 0, 0,0]) #tp, fp, fn, tn 
         with open(can_path, 'w') as save_pred:
             with open(gold_path, 'w') as save_gold:
                 with torch.no_grad():
@@ -257,10 +299,13 @@ class Trainer(object):
                             batch_stats = Statistics(float(loss.cpu().data.numpy()), len(labels))
                             stats.update(batch_stats)
 
-                            sent_scores = sent_scores + mask.float()
+                            # sent_scores = sent_scores + mask.float() #remove this step
                             sent_scores = sent_scores.cpu().data.numpy()
-                            selected_ids = np.argsort(-sent_scores, 1)
-                        # selected_ids = np.sort(selected_ids,1)
+                            # selected_ids = np.argsort(-sent_scores, 1) # change this to using some threshold
+                            pred= ((sent_scores*mask) >= self.threshold)
+                            outcomes += self.compute_outcomes(pred, labels, mask)
+                            selected_ids = [ele.nonzero() for ele in pred]
+                        
                         for i, idx in enumerate(selected_ids):
                             _pred = []
                             if (len(batch.src_str[i]) == 0):
@@ -275,7 +320,7 @@ class Trainer(object):
                                 else:
                                     _pred.append(candidate)
 
-                                if ((not cal_oracle) and (not self.args.recall_eval) and len(_pred) == 3):
+                                if ((not cal_oracle) and (not self.args.recall_eval)): # and len(_pred) == 3): # - remove len==3 condition
                                     break
 
                             _pred = '<q>'.join(_pred)
@@ -289,15 +334,19 @@ class Trainer(object):
                             save_gold.write(gold[i].strip() + '\n')
                         for i in range(len(pred)):
                             save_pred.write(pred[i].strip() + '\n')
+
+        precision, recall, f1_score = self.compute_scores(outcomes)
+        logger.info("Test precision: {:0.2f}, recall: {:0.2f}, f1_score: {:0.2f}".format(precision, recall, f1_score))
+        
         if (step != -1 and self.args.report_rouge):
             rouges = test_rouge(self.args.temp_dir, can_path, gold_path)
             logger.info('Rouges at step %d \n%s' % (step, rouge_results_to_str(rouges)))
-        self._report_step(0, step, valid_stats=stats)
 
+        self._report_step(0, step, valid_stats=stats)
         return stats
 
     def _gradient_accumulation(self, true_batchs, normalization, total_stats,
-                               report_stats):
+                               report_stats, outcomes):#pass outcomes also
         if self.grad_accum_count > 1:
             self.model.zero_grad()
 
@@ -319,6 +368,8 @@ class Trainer(object):
             (loss / loss.numel()).backward()
             # loss.div(float(normalization)).backward()
 
+            pred = (sent_scores* mask.float()>=self.threshold)
+            outcomes += self.compute_outcomes(pred, labels, mask)
             batch_stats = Statistics(float(loss.cpu().data.numpy()), normalization)
 
             total_stats.update(batch_stats)
