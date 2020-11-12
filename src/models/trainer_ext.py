@@ -180,9 +180,9 @@ class Trainer(object):
         return total_stats
 
     def compute_outcomes(self, pred, labels, mask):
-        pred = pred.cpu().data.numpy()
-        labels = labels.cpu().data.numpy()
-        mask = mask.cpu().data.numpy()
+        pred = pred.cpu().data.numpy().astype('int64')
+        labels = labels.cpu().data.numpy().astype('int64')
+        mask = mask.cpu().data.numpy().astype('int64')
         tp = np.sum((pred*labels)*mask)
         fp = np.sum((pred*np.logical_not(labels))*mask)
         fn = np.sum((np.logical_not(pred)*labels)*mask)
