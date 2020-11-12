@@ -222,10 +222,12 @@ class Trainer(object):
                 # print(src.shape, labels.shape,  segs.shape, clss.shape, mask.shape, mask_cls.shape)
                 # torch.Size([3, 512]) torch.Size([3, 18]) torch.Size([3, 512]) torch.Size([3, 18]) torch.Size([3, 512]) torch.Size([3, 18])
 
+                print("src, segs, clss, mask, mask_cls")
+                print(src.shape, labels.shape,  segs.shape, clss.shape, mask.shape, mask_cls.shape)
+ 
                 sent_scores, mask = self.model(src, segs, clss, mask, mask_cls)
                 # print("sent_scores, mask")
                 # torch.Size([3, 18]) torch.Size([3, 18])
-
                 loss = self.loss(sent_scores, labels.float())
                 loss = (loss * mask.float()).sum()
                 batch_stats = Statistics(float(loss.cpu().data.numpy()), len(labels))
@@ -237,6 +239,7 @@ class Trainer(object):
 
             precision, recall, f1_score = self.compute_scores(outcomes)
             logger.info("Validation precision: {:0.2f}, recall: {:0.2f}, f1_score: {:0.2f}".format(precision, recall, f1_score))
+
             self._report_step(0, step, valid_stats=stats)
             return stats
 

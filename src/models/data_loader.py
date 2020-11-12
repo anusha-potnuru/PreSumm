@@ -208,10 +208,13 @@ class DataIterator(object):
 
         src_sent_labels = src_sent_labels[:max_sent_id]
         clss = clss[:max_sent_id]
-        # src_txt = src_txt[:max_sent_id]
 
+        # src_txt = src_txt[:max_sent_id]
         # these clss, src_sent_labels are of diff lengths for each example - how is it handled?
-        #exit()
+        # print(src, tgt, segs, clss, src_sent_labels)
+        #print(clss)
+        #print(max_sent_id)
+        # exit()
 
         if(is_test):
             return src, tgt, segs, clss, src_sent_labels, src_txt, tgt_txt
