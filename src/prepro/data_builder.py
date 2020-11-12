@@ -151,7 +151,7 @@ def tokenize(args):
     print("Stanford CoreNLP Tokenizer has finished.")
     os.remove("mapping_for_corenlp.txt")
 
-    # Check that the tokenized stories directory contains the same number of files as the original directory
+    # verify that the tokenized stories directory contains the same number of files as the original directory
     num_orig = len(os.listdir(stories_dir))
     num_tokenized = len(os.listdir(tokenized_stories_dir))
     if num_orig != num_tokenized:
@@ -218,6 +218,17 @@ def greedy_selection(doc_sent_list, abstract_sent_list, summary_size):
         max_rouge = cur_max_rouge
 
     return sorted(selected)
+
+def total_selection(src, tgt): #return all sent ids of src that are tgt
+    sent_labels = []
+    i=0
+    for sent in tgt:
+        while i<len(src) and sent!=src[i]:
+            i+=1
+        if i==len(src):
+            break
+        sent_labels.append(i)
+    return sent_labels
 
 
 def hashhex(s):
@@ -292,6 +303,8 @@ class BertData():
         tgt_txt = '<q>'.join([' '.join(tt) for tt in tgt])
         src_txt = [original_src_txt[i] for i in idxs]
 
+        print("src_subtoken_idxs len: ", len(src_subtoken_idxs)) #CHECK THIS
+
         return src_subtoken_idxs, sent_labels, tgt_subtoken_idxs, segments_ids, cls_ids, src_txt, tgt_txt
 
 
@@ -327,26 +340,40 @@ def _format_to_bert(params):
     logger.info('Processing %s' % json_file)
     jobs = json.load(open(json_file))
     datasets = []
+
+    n_tokens_src = []
+    n_tokens_tgt = []
+
     for d in jobs:
         source, tgt = d['src'], d['tgt']
 
-        sent_labels = greedy_selection(source[:args.max_src_nsents], tgt, 3)
+        if args.dataset_name=='legal_doc':
+            sent_labels = total_selection(source[:args.max_src_nsents], tgt)
+        else:
+            sent_labels = greedy_selection(source[:args.max_src_nsents], tgt, 3) #this for cnn and other datasets
+
         if (args.lower):
-            source = [' '.join(s).lower().split() for s in source]
+            source = [' '.join(s).lower().split() for s in source] # NOTE -all sentences are combined here
             tgt = [' '.join(s).lower().split() for s in tgt]
-        b_data = bert.preprocess(source, tgt, sent_labels, use_bert_basic_tokenizer=args.use_bert_basic_tokenizer,
-                                 is_test=is_test)
+        b_data = bert.preprocess(source, tgt, sent_labels, use_bert_basic_tokenizer=args.use_bert_basic_tokenizer, is_test=is_test) # CHECK preprocess- set max_pos there
+        
         # b_data = bert.preprocess(source, tgt, sent_labels, use_bert_basic_tokenizer=args.use_bert_basic_tokenizer)
 
         if (b_data is None):
             continue
         src_subtoken_idxs, sent_labels, tgt_subtoken_idxs, segments_ids, cls_ids, src_txt, tgt_txt = b_data
+        n_tokens_src.append(len(src_subtoken_idxs))
+        n_tokens_tgt.append(len(tgt_subtoken_idxs))
+
         b_data_dict = {"src": src_subtoken_idxs, "tgt": tgt_subtoken_idxs,
                        "src_sent_labels": sent_labels, "segs": segments_ids, 'clss': cls_ids,
                        'src_txt': src_txt, "tgt_txt": tgt_txt}
         datasets.append(b_data_dict)
+
     logger.info('Processed instances %d' % len(datasets))
+    logger.info('{} {}'.format(sum(n_tokens_src)//len(datasets), sum(n_tokens_tgt)//len(datasets))) # Check this -> calculate and use this as max_pos
     logger.info('Saving to %s' % save_file)
+
     torch.save(datasets, save_file)
     datasets = []
     gc.collect()
