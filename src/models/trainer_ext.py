@@ -183,10 +183,10 @@ class Trainer(object):
         pred = pred.cpu().data.numpy()
         labels = labels.cpu().data.numpy()
         mask = mask.cpu().data.numpy()
-        tp = sum((pred*labels)*mask)
-        fp = sum((pred*np.logical_not(labels))*mask)
-        fn = sum((np.logical_not(pred)*labels)*mask)
-        tn = sum((np.logical_not(pred)*np.logical_not(labels))*mask)
+        tp = np.sum((pred*labels)*mask)
+        fp = np.sum((pred*np.logical_not(labels))*mask)
+        fn = np.sum((np.logical_not(pred)*labels)*mask)
+        tn = np.sum((np.logical_not(pred)*np.logical_not(labels))*mask)
         return np.array([tp, fp, fn, tn])
 
     def compute_scores(outcomes):#tp, fp, fn, tn 

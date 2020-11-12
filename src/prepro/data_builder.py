@@ -321,7 +321,7 @@ def format_to_bert(args):
             a_lst.append((corpus_type, json_f, args, pjoin(args.save_path, real_name.replace('json', 'bert.pt'))))
         print(a_lst)
         pool = Pool(args.n_cpus)
-        for d in pool.imap(_format_to_bert, a_lst):
+        for d in pool.imap(_format_to_bert, a_lst):#error here
             pass
 
         pool.close()
@@ -356,7 +356,7 @@ def _format_to_bert(params):
             source = [' '.join(s).lower().split() for s in source] # NOTE -all sentences are combined here
             tgt = [' '.join(s).lower().split() for s in tgt]
         b_data = bert.preprocess(source, tgt, sent_labels, use_bert_basic_tokenizer=args.use_bert_basic_tokenizer, is_test=is_test) # CHECK preprocess- set max_pos there
-        
+
         # b_data = bert.preprocess(source, tgt, sent_labels, use_bert_basic_tokenizer=args.use_bert_basic_tokenizer)
 
         if (b_data is None):
@@ -371,7 +371,7 @@ def _format_to_bert(params):
         datasets.append(b_data_dict)
 
     logger.info('Processed instances %d' % len(datasets))
-    logger.info('{} {}'.format(sum(n_tokens_src)//len(datasets), sum(n_tokens_tgt)//len(datasets))) # Check this -> calculate and use this as max_pos
+    logger.info('Avg no tokens are: {:0.2f} {:0.2f}'.format(sum(n_tokens_src)/len(datasets), sum(n_tokens_tgt)/len(datasets))) # Check this -> calculate and use this as max_pos
     logger.info('Saving to %s' % save_file)
 
     torch.save(datasets, save_file)
