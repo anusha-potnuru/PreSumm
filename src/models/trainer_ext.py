@@ -189,7 +189,7 @@ class Trainer(object):
         tn = np.sum((np.logical_not(pred)*np.logical_not(labels))*mask)
         return np.array([tp, fp, fn, tn])
 
-    def compute_scores(outcomes):#tp, fp, fn, tn 
+    def compute_scores(self, outcomes):#tp, fp, fn, tn 
         tp = outcomes[0]
         fp = outcomes[1]
         fn = outcomes[2]
