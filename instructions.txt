@@ -1,0 +1,43 @@
+# Add path for stanford corenlp for preprocessing
+export CLASSPATH=~/PreSumm/stanford-corenlp-4.1.0/stanford-corenlp-4.1.0.jar
+
+### Train, valid preprocessing
+# Step 1: Sentence Splitting and Tokenization
+python preprocess.py -mode tokenize -raw_path ../legal_data/INDIA-TRAIN-DATA/ -save_path ../legal_data/data_preprocessed/
+
+# Step 2: Format to Simpler Json Files
+# Use dataset_name arg as legal_doc if the documents have sentences ending with $$$0/$$$1 as given.
+python preprocess.py -mode format_to_lines -raw_path ../legal_data/data_preprocessed/  -save_path ../legal_data/data_json/data -n_cpus 1 -use_bert_basic_tokenizer false -dataset_name legal_doc 
+
+# Step 3: Format to PyTorch Files
+# Set number of source sentences length here using max_src_nsents. By default, 0.2 of the given data path is used for validation.
+python preprocess.py -mode format_to_bert -raw_path ../legal_data/data_json -save_path ../legal_data/bert_data_new/  -lower -n_cpus 1 -log_file ../logs1/preprocess.log -dataset_name legal_doc -max_src_nsents 128
+
+### Test preprocessing
+# Step 1: Sentence Splitting and Tokenization
+python preprocess.py -mode tokenize -raw_path ../legal_data/INDIA-TEST-DATA/processed/ -save_path ../legal_data/test_preprocessed/
+
+# Step 2: Format to Simpler Json Files
+python preprocess.py -mode format_to_lines -raw_path ../legal_data/test_preprocessed/  -save_path ../legal_data/test_json/data -n_cpus 1 -use_bert_basic_tokenizer false -dataset_name legal_doc_test
+
+# Step 3: Format to PyTorch Files
+# Set number of source sentences length here using max_src_nsents
+python preprocess.py -mode format_to_bert -raw_path ../legal_data/test_json -save_path ../legal_data/bert_data_new/  -lower -n_cpus 1 -log_file ../logs1/preprocess_test.log -dataset_name legal_doc_test -max_src_nsents 128
+
+### Training
+# Set document length here using max_pos argument
+python train.py -task ext -mode train -bert_data_path ../legal_data/bert_data_new/data -ext_dropout 0.1 -model_path ../models1/ -lr 2e-3 -visible_gpus 0,1 -report_every 50 -save_checkpoint_steps 300 -batch_size 100 -train_steps 15000 -accum_count 2 -log_file ../logs1/ext_bert_legal -use_interval true -warmup_steps 3000 -max_pos 2000
+
+# # Validation
+# Set document length here using max_pos argument
+# This will run validation all model checkpoints and output their validation loss, metrics. Final prints the top 3 model checkpoint names.
+
+python train.py -task ext -mode validate -test_all -batch_size 100 -test_batch_size 100 -bert_data_path ../legal_data/bert_data_new/data -log_file ../logs1/val_ext_bert_legal -model_path ../models1/ -sep_optim true -use_interval true -visible_gpus 0,1 -max_pos 2000 -alpha 0.95 -result_path ../logs1/val_ext_bert_legal1
+
+### Testing
+# Set document length here using max_pos argument, set -test_from argument with the model name that you want to test on.
+python train.py -task ext -mode test -test_from ../models1/model_step_5100.pt -batch_size 500 -test_batch_size 500 -bert_data_path ../legal_data/bert_data_new/data -log_file ../logs1/test_ext_bert_legal -model_path ../models1/ -sep_optim true -use_interval true -visible_gpus 0,1 -max_pos 2000 -alpha 0.9 -result_path ../logs1/test_ext_bert_legal
+
+
+
+
