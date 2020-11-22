@@ -36,7 +36,10 @@ def load_json(p, lower):
     source = []
     tgt = []
     flag = False
-    for sent in json.load(open(p, encoding="utf-8"))['sentences']:
+    sents =  json.load(open(p , encoding="utf-8" ))['sentences']
+    #print('no of sents: ', len(sents))
+
+    for sent in sents:
         tokens = [t['word'] for t in sent['tokens']]
         if (lower):
             tokens = [t.lower() for t in tokens]
@@ -51,6 +54,7 @@ def load_json(p, lower):
 
     source = [clean(' '.join(sent)).split() for sent in source]
     tgt = [clean(' '.join(sent)).split() for sent in tgt]
+    #print('src len: ', len(source), 'tgt len: ', len(tgt))
     return source, tgt
 
 def load_json1(p, lower): # for lega doc processing
@@ -347,7 +351,9 @@ def _format_to_bert(params):
     for d in jobs:
         source, tgt = d['src'], d['tgt']
 
-        if args.dataset_name=='legal_doc':
+        if args.dataset_name=='legal_doc' or args.dataset_name=='legal_doc_test':
+            #print(source[:args.max_src_nsents], '\n',  tgt)
+            #print("==============================================================")
             sent_labels = total_selection(source[:args.max_src_nsents], tgt)
         else:
             sent_labels = greedy_selection(source[:args.max_src_nsents], tgt, 3) #this for cnn and other datasets

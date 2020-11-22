@@ -8,7 +8,8 @@ import distributed
 from models.reporter_ext import ReportMgr, Statistics
 from others.logging import logger
 from others.utils import test_rouge, rouge_results_to_str
-
+import glob
+from os.path import join as pjoin
 
 def _tally_parameters(model):
     n_params = sum([p.nelement() for p in model.parameters()])
@@ -94,7 +95,7 @@ class Trainer(object):
         self.gpu_rank = gpu_rank
         self.report_manager = report_manager
 
-        self.threshold = 0.5 #added
+        self.threshold = 0.4 #added
 
         self.loss = torch.nn.BCELoss(reduction='none')
         assert grad_accum_count > 0
@@ -273,7 +274,12 @@ class Trainer(object):
 
         can_path = '%s_step%d.candidate' % (self.args.result_path, step)
         gold_path = '%s_step%d.gold' % (self.args.result_path, step)
-
+        test_files =  glob.glob(pjoin('../legal_data/INDIA-TEST-DATA/processed/', '*.txt'))
+        test_files.sort()
+        test_files = [os.path.basename(x) for x in test_files]
+        print('===================Test files len', len(test_files))
+        #print(test_files)
+        cnt =0
         outcomes = np.array([0, 0, 0,0]) #tp, fp, fn, tn 
         with open(can_path, 'w') as save_pred:
             with open(gold_path, 'w') as save_gold:
@@ -285,7 +291,7 @@ class Trainer(object):
                         clss = batch.clss
                         mask = batch.mask_src
                         mask_cls = batch.mask_cls
-
+                        # print(src.shape, labels.shape, segs.shape, clss.shape, mask.shape, mask_cls.shape )
                         gold = []
                         pred = []
 
@@ -303,12 +309,17 @@ class Trainer(object):
                             stats.update(batch_stats)
 
                             # sent_scores = sent_scores + mask.float() #remove this step
-                            sent_scores = sent_scores.cpu().data.numpy()
+                            # sent_scores = sent_scores.cpu().data.numpy()
                             # selected_ids = np.argsort(-sent_scores, 1) # change this to using some threshold
-                            pred= ((sent_scores*mask) >= self.threshold)
-                            outcomes += self.compute_outcomes(pred, labels, mask)
-                            selected_ids = [ele.nonzero() for ele in pred]
-                        
+                            #print(sent_scores.shape)
+                            #print(sent_scores)
+                            predictions = ((sent_scores*mask.float() ) >= self.threshold)
+                            # print(predictions.shape)
+                            outcomes += self.compute_outcomes(predictions, labels, mask)
+                            predictions = predictions.cpu().data.numpy()
+                            # selected_ids = np.nonzero(pred)
+                            selected_ids = [list(ele.nonzero()[0]) for ele in predictions]
+                            #print(selected_ids)
                         for i, idx in enumerate(selected_ids):
                             _pred = []
                             if (len(batch.src_str[i]) == 0):
@@ -323,8 +334,8 @@ class Trainer(object):
                                 else:
                                     _pred.append(candidate)
 
-                                if ((not cal_oracle) and (not self.args.recall_eval)): # and len(_pred) == 3): # - remove len==3 condition
-                                    break
+                                #if ((not cal_oracle) and (not self.args.recall_eval)): # and len(_pred) == 3): # - remove len==3 condition
+                                #    break
 
                             _pred = '<q>'.join(_pred)
                             if (self.args.recall_eval):
@@ -336,7 +347,9 @@ class Trainer(object):
                         for i in range(len(gold)):
                             save_gold.write(gold[i].strip() + '\n')
                         for i in range(len(pred)):
-                            save_pred.write(pred[i].strip() + '\n')
+                            print( test_files[cnt])
+                            save_pred.write(test_files[cnt] +'\n'+ pred[i].strip() + '\n')
+                            cnt+=1
 
         precision, recall, f1_score = self.compute_scores(outcomes)
         logger.info("Test precision: {:0.2f}, recall: {:0.2f}, f1_score: {:0.2f}".format(precision, recall, f1_score))
